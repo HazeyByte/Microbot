@@ -27,7 +27,6 @@ import net.runelite.client.plugins.microbot.util.coords.Rs2WorldArea;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
-import net.runelite.client.plugins.microbot.api.tileobject.Rs2ObjectIds;
 import net.runelite.client.plugins.microbot.api.tileobject.models.Rs2TileObjectModel;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
@@ -1584,6 +1583,12 @@ final class Rs2WalkerTransports {
                     transport.getName(), transport.getDisplayInfo());
             return true;
         }
+        // Numbered menus (Fossil Island rowboats): the label leads with the key, its text is shortened.
+        Character optionKey = TransportExecutionRegistry.numberedOptionKey(transport.getDisplayInfo());
+        if (optionKey != null) {
+            Rs2Keyboard.keyPress(optionKey);
+            return true;
+        }
         if (Rs2Dialogue.clickOption(transport.getDisplayInfo())) {
             return true;
         }
@@ -2007,21 +2012,6 @@ final class Rs2WalkerTransports {
 
         if (tileObject.getId() == ObjectID.HEROROCKSLIDE) {
             Rs2Player.waitForAnimation(600 * 4);
-            return true;
-        }
-
-        if (Rs2ObjectIds.byName("Fossil_Rowboat").contains(tileObject.getId())) {
-            if (transport.getDisplayInfo() == null || transport.getDisplayInfo().isEmpty()) return false;
-
-            char option = transport.getDisplayInfo().charAt(0);
-            Rs2Dialogue.sleepUntilSelectAnOption();
-            Rs2Keyboard.keyPress(option);
-            sleepUntil(() -> {
-                WorldPoint pl = Rs2Player.getWorldLocation();
-                WorldPoint td = transport.getDestination();
-                return pl != null && td != null && pl.getPlane() == td.getPlane()
-                        && pl.distanceTo2D(td) < OFFSET;
-            }, 10000);
             return true;
         }
 

@@ -82,6 +82,12 @@
 3582 3973 0	3660 3849 0	Travel;Rowboat;32079				Dragon Slayer II		5	
 									
 # Fossil Island, Underwater									
+# Rowboat menus as read in-game on 2026-10-31. Display info leads with the menu key the walker presses.
+#   Camp 30914: 1 Row to the barge, 2 North of the island, 3 Barge and travel to the Digsite (ships.tsv), 4 Out to sea
+#   North 30915: 1 Row to the barge, 2 The camp, 3 Out to sea
+#   Sea 30919: 1 Row to the barge, 2 North of the island, 3 The camp, 4 Dive into the sea
+# No rows for "Row to the barge": the moored barge (3723 3784 1) is left only via the Lead Navigator to the Digsite.
+# No row for "Dive into the sea": the underwater area needs diving gear.
 3724 3807 0	3734 3893 0	Travel;Rowboat;30914						4	2. North of Island
 3734 3893 0	3724 3807 0	Travel;Rowboat;30915						4	2. The Camp
 3734 3893 0	3763 3899 0	Travel;Rowboat;30915						4	3. To Sea

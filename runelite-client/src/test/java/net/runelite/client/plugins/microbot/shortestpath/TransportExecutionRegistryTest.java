@@ -151,7 +151,7 @@ public class TransportExecutionRegistryTest
 			.collect(Collectors.toList());
 
 		assertEquals("only explicitly audited terminal rows may remain fail-closed: " + describe(unsupported),
-			41, unsupported.size());
+			35, unsupported.size());
 		assertTrue("non-terminal execution debt: " + describe(unsupported),
 			unsupported.stream().allMatch(transport ->
 				transport.getType() == TransportType.SHIP
@@ -164,7 +164,6 @@ public class TransportExecutionRegistryTest
 			"BOAT:Board:Boat", 18L,
 			"BOAT:Board:Boaty", 12L,
 			"BOAT:Talk-to:Pirate Pete", 2L,
-			"BOAT:Travel:Rowboat", 6L,
 			"SHIP:Talk-to:Captain Shanks", 3L), debtByInteraction);
 		assertEquals("all teleport spells must have a registered executor",
 			0L, unsupported.stream()
@@ -177,6 +176,85 @@ public class TransportExecutionRegistryTest
 				.filter(transport -> TransportExecutionRegistry.executorFor(transport)
 					.orElse(null) == TransportExecutionRegistry.Executor.HOT_AIR_BALLOON)
 				.count());
+	}
+
+	@Test
+	public void numberedRowboatMenusAreDialogueDestinations()
+	{
+		// Fossil Island camp rowboat: one object, a numbered menu, rows in both boats.tsv and ships.tsv.
+		WorldPoint camp = new WorldPoint(3724, 3807, 0);
+		for (TransportType type : List.of(TransportType.BOAT, TransportType.SHIP))
+		{
+			Transport rowboat = new Transport(
+				camp, new WorldPoint(3734, 3893, 0), "2. North of Island", type, true,
+				"Travel", "Rowboat", 30914, 4);
+			assertEquals(TransportExecutionRegistry.TerminalTravelMode.DIALOGUE_DESTINATION,
+				TransportExecutionRegistry.terminalTravelModeFor(rowboat).orElse(null));
+			assertTrue(TransportExecutionRegistry.canExecute(rowboat));
+		}
+		Transport unnumbered = new Transport(
+			camp, new WorldPoint(3734, 3893, 0), "North of Island", TransportType.BOAT, true,
+			"Travel", "Rowboat", 30914, 4);
+		assertFalse("an unnumbered rowboat label still fails closed",
+			TransportExecutionRegistry.canExecute(unnumbered));
+	}
+
+	/**
+	 * Read in-game 2026-10-31: 1. Row to the barge, 2. Row to the north of the island, 3. Row to the barge
+	 * and travel to the Digsite, 4. Row out to sea, north of the island, 5. Cancel.
+	 */
+	@Test
+	public void fossilIslandCampRowboatKeysMatchTheInGameMenu()
+	{
+		WorldPoint camp = new WorldPoint(3724, 3807, 0);
+		Map<WorldPoint, Character> keyByDestination = Transport.loadAllFromResources()
+			.getOrDefault(camp, Set.of()).stream()
+			.filter(transport -> transport.getObjectId() == 30914)
+			.collect(Collectors.toMap(Transport::getDestination,
+				transport -> TransportExecutionRegistry.numberedOptionKey(transport.getDisplayInfo())));
+
+		assertEquals(Map.of(
+			new WorldPoint(3734, 3893, 0), '2',
+			new WorldPoint(3362, 3445, 0), '3',
+			new WorldPoint(3763, 3899, 0), '4'), keyByDestination);
+	}
+
+	@Test
+	public void numberedOptionKeyReadsOnlyALeadingDigitAndDot()
+	{
+		assertEquals(Character.valueOf('3'), TransportExecutionRegistry.numberedOptionKey("3. Digsite"));
+		assertEquals(Character.valueOf('4'), TransportExecutionRegistry.numberedOptionKey("4. To Sea"));
+		assertEquals(null, TransportExecutionRegistry.numberedOptionKey("Musa Point"));
+		assertEquals(null, TransportExecutionRegistry.numberedOptionKey("0. Nowhere"));
+		assertEquals(null, TransportExecutionRegistry.numberedOptionKey("12 Things"));
+		assertEquals(null, TransportExecutionRegistry.numberedOptionKey("1"));
+		assertEquals(null, TransportExecutionRegistry.numberedOptionKey(null));
+	}
+
+	/**
+	 * DIRECT means "the click itself picks the destination". An origin whose one action leads to several
+	 * destinations opens a menu, so a DIRECT row there is planned but can never land (Fossil Island
+	 * camp rowboat -> Digsite, 2026-10-31).
+	 */
+	@Test
+	public void noDirectTerminalTravelSharesItsActionWithAnotherDestination()
+	{
+		Map<String, List<Transport>> byClick = Transport.loadAllFromResources().values().stream()
+			.flatMap(Set::stream)
+			.filter(transport -> TransportExecutionRegistry.executorFor(transport).orElse(null)
+				== TransportExecutionRegistry.Executor.TERMINAL_TRAVEL)
+			.collect(Collectors.groupingBy(transport -> transport.getOrigin() + "|" + transport.getObjectId()
+				+ "|" + transport.getAction().toLowerCase()));
+
+		List<Transport> ambiguous = byClick.values().stream()
+			.filter(rows -> rows.stream().map(Transport::getDestination).distinct().count() > 1)
+			.flatMap(List::stream)
+			.filter(transport -> TransportExecutionRegistry.terminalTravelModeFor(transport).orElse(null)
+				== TransportExecutionRegistry.TerminalTravelMode.DIRECT)
+			.collect(Collectors.toList());
+
+		assertTrue("a DIRECT click cannot choose between destinations: " + describe(ambiguous),
+			ambiguous.isEmpty());
 	}
 
 	private static Transport spell(String displayInfo)

@@ -669,3 +669,13 @@ The pathfinder charges a teleport edge `distanceBeforeUsingTeleport + duration`,
 **Where this applies:** `CollisionMap` teleport neighbours, `Rs2WalkerBankingPlanner.transportHopCost` and every route-distance comparison that mixes walking tiles and transports.
 
 **Defensive check:** `BankedTransportItemPlanningTest.minigameTeleportIsPricedForItsCooldownNotAsOneTile` and `itemTeleportCostsItsDurationAndObjectTransportsStayOneStep`.
+
+## 35. A terminal-travel row is DIRECT only if the click itself picks the destination
+
+`TransportExecutionRegistry.terminalTravelModeFor` resolves SHIP, BOAT and NPC rows to DIRECT unless a rule says otherwise. DIRECT means "click the action and wait to land", with no dialogue choice. When one action at one origin leads to several destinations, the click opens a menu instead, and a DIRECT row there is planned but can never land.
+
+**Why this matters:** The Fossil Island camp rowboat (30914) offers a numbered menu. Its `boats.tsv` rows carry labels such as `2. North of Island`, which the old `Fossil_Rowboat` handler pressed as keys, but the decomposed executor (`badf652830`) never reached that handler, and the registry marked the numbered rows unsupported. The `ships.tsv` row to the Digsite had no label at all, so it resolved to DIRECT: the walker clicked Travel, the menu stayed open, the landing wait timed out, and Fossil Island's only non-teleport exit failed every time.
+
+**Pattern to follow:** label every destination of a numbered menu with its in-game key; the camp rowboat menu is 1 barge, 2 north of the island, 3 barge and Digsite, 4 out to sea, so the Digsite row is `3. Digsite`. A `Travel` + `Rowboat` row with a numbered label resolves to DIALOGUE_DESTINATION, and `selectTerminalTravelDialogueDestination` presses `TransportExecutionRegistry.numberedOptionKey(label)`; other labels are clicked by text.
+
+**Defensive check:** `TransportExecutionRegistryTest.noDirectTerminalTravelSharesItsActionWithAnotherDestination` fails on any DIRECT row whose origin, object and action also lead somewhere else.

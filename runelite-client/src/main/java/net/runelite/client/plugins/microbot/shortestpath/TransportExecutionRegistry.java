@@ -242,6 +242,11 @@ public final class TransportExecutionRegistry
 			return Optional.empty();
 		}
 
+		// Fossil Island rowboats open a numbered menu; the row's display info leads with the option key.
+		if (isRowboat(transport) && numberedOptionKey(transport.getDisplayInfo()) != null)
+		{
+			return Optional.of(TerminalTravelMode.DIALOGUE_DESTINATION);
+		}
 		if (requiresUnsupportedTerminalDestinationSelection(transport))
 		{
 			return Optional.empty();
@@ -258,6 +263,26 @@ public final class TransportExecutionRegistry
 	private static boolean isTerminalTravelType(TransportType type)
 	{
 		return type == TransportType.SHIP || type == TransportType.NPC || type == TransportType.BOAT;
+	}
+
+	/**
+	 * The menu key of a numbered destination label such as {@code "2. North of Island"}, or null when
+	 * the label is not numbered. The terminal-travel executor presses this key instead of matching text.
+	 */
+	public static Character numberedOptionKey(String displayInfo)
+	{
+		if (displayInfo == null || displayInfo.length() < 2)
+		{
+			return null;
+		}
+		char key = displayInfo.charAt(0);
+		return key >= '1' && key <= '9' && displayInfo.charAt(1) == '.' ? key : null;
+	}
+
+	private static boolean isRowboat(Transport transport)
+	{
+		return "Travel".equalsIgnoreCase(transport.getAction())
+			&& "Rowboat".equalsIgnoreCase(transport.getName());
 	}
 
 	private static boolean requiresUnsupportedTerminalDestinationSelection(Transport transport)

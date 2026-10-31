@@ -71,3 +71,5 @@ Append a new numbered entry. Do **not** delete or rewrite existing entries unles
 Required-supply stops must suppress AutoLogin without blocking the next run: [items gotcha 15](items.md#15-suppress-autologin-only-for-confirmed-terminal-supply-stops).
 
 Minigame teleport dropdown clicks and teleport pricing: [movement gotcha 32](movement.md#32-click-a-dropdown-row-on-the-row-not-with-a-placeholder-rectangle) and [gotcha 33](movement.md#33-price-teleport-hops-the-same-way-in-bank-vs-direct-as-in-the-pathfinder).
+
+Terminal travel with a destination menu (Fossil Island rowboats): [movement gotcha 35](movement.md#35-a-terminal-travel-row-is-direct-only-if-the-click-itself-picks-the-destination).
