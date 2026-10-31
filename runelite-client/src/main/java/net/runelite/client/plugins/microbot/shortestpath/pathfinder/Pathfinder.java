@@ -51,6 +51,10 @@ public class Pathfinder implements Runnable {
     private final int[] targetsPacked;
 
     private final PathfinderConfig config;
+    /** The config's transport refresh key when this route was created; see {@link PathfinderConfig#getLastRefreshKey}. */
+    private final int plannedRefreshKey;
+    /** The config's item fingerprint when this route was created; see {@link PathfinderConfig#getLastItemFingerprint}. */
+    private final int plannedItemFingerprint;
     private CollisionMap map;
     private final boolean targetInWilderness;
 
@@ -97,6 +101,8 @@ public class Pathfinder implements Runnable {
     public Pathfinder(PathfinderConfig config, int start, Set<Integer> targets) {
         stats = new PathfinderStats();
         this.config = config;
+        this.plannedRefreshKey = config.getLastRefreshKey();
+        this.plannedItemFingerprint = config.getLastItemFingerprint();
         this.start = start;
         this.targets = targets;
         this.targetsPacked = new int[targets.size()];
@@ -184,6 +190,14 @@ public class Pathfinder implements Runnable {
             return 0;
         }
         return (int) Math.min(Integer.MAX_VALUE, metric);
+    }
+
+    public int getPlannedRefreshKey() {
+        return plannedRefreshKey;
+    }
+
+    public int getPlannedItemFingerprint() {
+        return plannedItemFingerprint;
     }
 
     public WorldPoint getStart() {

@@ -1366,9 +1366,12 @@ public class Rs2Walker {
         if (routeStatus.isCalculating()) {
             return WalkerState.MOVING;
         }
-        boolean hasCurrentPath = routeStatus.isReady()
-                && routeStatus.getTargets().contains(target);
+        boolean plannedWithCurrentTransports = Rs2PathApi.isActiveRoutePlannedWithCurrentTransports();
+        boolean hasCurrentPath = canReuseActiveRoute(routeStatus, target, plannedWithCurrentTransports);
         if (!hasCurrentPath) {
+            if (routeStatus.isReady() && routeStatus.getTargets().contains(target)) {
+                WebWalkLog.spInfo("stale_route_replan | target={} source=walk", compactWorldPoint(target));
+            }
             setTarget(target);
         } else {
             currentTarget = target;
@@ -1394,6 +1397,18 @@ public class Rs2Walker {
         }
         markWalkSessionStart(target);
         return processWalk(target, distance);
+    }
+
+    /**
+     * A finished route to this target is reused only if it was planned with today's transports. After a
+     * bank withdrawal the old route predates the withdrawn teleport item (Fossil Island: Ring of wealth
+     * withdrawn, pre-withdraw rowboat route walked anyway).
+     */
+    static boolean canReuseActiveRoute(Rs2ActiveRouteStatus routeStatus, WorldPoint target,
+                                       boolean plannedWithCurrentTransports) {
+        return plannedWithCurrentTransports
+                && routeStatus.isReady()
+                && routeStatus.getTargets().contains(target);
     }
 
     static void withdrawPreviousWalkScopedBlocks(int walkerLockHoldCount) {
@@ -1472,6 +1487,12 @@ public class Rs2Walker {
         Rs2ActiveRouteStatus routeStatus = Rs2PathApi.getActiveRouteStatus();
         if (!routeStatus.isReady()) {
             return WalkerState.MOVING; // path still computing — wait, don't reset it
+        }
+        // Same target, but planned before the caller withdrew/equipped a transport item: replan once.
+        if (!Rs2PathApi.isActiveRoutePlannedWithCurrentTransports()) {
+            WebWalkLog.spInfo("stale_route_replan | target={} source=walkStep", compactWorldPoint(target));
+            setTarget(target);
+            return WalkerState.MOVING;
         }
 
         // Already in transit toward the last click — let it resolve instead of spamming clicks.

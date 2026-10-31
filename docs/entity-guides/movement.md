@@ -669,3 +669,15 @@ The pathfinder charges a teleport edge `distanceBeforeUsingTeleport + duration`,
 **Where this applies:** `CollisionMap` teleport neighbours, `Rs2WalkerBankingPlanner.transportHopCost` and every route-distance comparison that mixes walking tiles and transports.
 
 **Defensive check:** `BankedTransportItemPlanningTest.minigameTeleportIsPricedForItsCooldownNotAsOneTile` and `itemTeleportCostsItsDurationAndObjectTransportsStayOneStep`.
+
+## 34. Do not reuse a ready route that was planned with different transport items
+
+A finished route to the same target is only valid for the transports that were usable when it was planned. `Rs2Walker.walkWithStateInternal` and `walkStep` used to reuse any ready route whose targets contained the goal, so a route planned before a bank withdrawal, an equip, or a `useBankItems` switch kept being walked after the new teleport item was in hand.
+
+**Why this matters:** On Fossil Island a world-map click planned the GE route with no teleport in the inventory, so it used the rowboat (241 tiles). The bank-vs-direct comparison then withdrew a Ring of wealth, and `prepareInventoryOnlyRoute` refreshed the transports. The bank was 2 tiles away, so nothing replaced the old route, and the walk reused it and headed for the rowboat. Reuse came in with `f9e1b9de04` (2026-05); map clicks that plan before the walker runs (PR #1860) made it common.
+
+**Pattern to follow:** each `Pathfinder` records `PathfinderConfig.getLastRefreshKey()` and `getLastItemFingerprint()` when it is created. Reuse a route only if `Rs2PathApi.isActiveRoutePlannedWithCurrentTransports()` holds: same refresh key and the same live item fingerprint (`currentItemFingerprint()`, cheap enough for every tick). Otherwise call `setTarget(target)` and plan again.
+
+**Where this applies:** `Rs2Walker.walkWithStateInternal`, `Rs2Walker.walkStep`, and any new code that reuses the active route instead of calling `setTarget`.
+
+**Defensive check:** `Rs2WalkerStaleRouteReuseTest` covers reuse, a stale item fingerprint, a changed refresh key, and the planning-time stamps.

@@ -300,6 +300,26 @@ public final class Rs2PathApi
 	 * continue improving its partial path while calculating, but the returned lists cannot change under
 	 * the caller.</p>
 	 */
+	/**
+	 * Whether the active route was planned with the transports usable now: same transport refresh (items
+	 * and settings) and the same transport-relevant items in hand. False after a bank withdrawal or an
+	 * equip, even if nothing has refreshed the config since.
+	 *
+	 * <p>shortcut: quest/varbit unlocks are not part of either stamp, so a route planned before a quest
+	 * step finishes is still reused; add the refresh verification hash if that ever matters.</p>
+	 */
+	static boolean isActiveRoutePlannedWithCurrentTransports()
+	{
+		synchronized (getPathfinderMutex())
+		{
+			Pathfinder source = getPathfinder();
+			PathfinderConfig config = getPathfinderConfig();
+			return source != null && config != null
+				&& source.getPlannedRefreshKey() == config.getLastRefreshKey()
+				&& source.getPlannedItemFingerprint() == config.currentItemFingerprint();
+		}
+	}
+
 	public static Rs2ActiveRouteStatus getActiveRouteStatus()
 	{
 		synchronized (getPathfinderMutex())

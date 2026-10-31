@@ -146,6 +146,11 @@ public class PathfinderConfig {
      */
     private volatile int lastComputedInvFingerprint;
     private volatile int previousRefreshInvFingerprint;
+    /**
+     * Cache key of the most recent transport refresh. A route planned under a different key was
+     * planned with different items or settings (e.g. before a bank withdrawal) and must not be reused.
+     */
+    private volatile int lastRefreshKey;
     /** Which verification component moved on the most recent verify-miss; see the miss log. */
     private volatile String lastVerifyMissDetail = "";
     @Getter
@@ -506,6 +511,7 @@ public class PathfinderConfig {
         final Rs2LeaguesTransport.LeaguesContext leaguesCtx = Rs2LeaguesTransport.leaguesContext();
         lastKeyLeaguesMs = System.currentTimeMillis() - keyStart;
         int refreshCacheKeyHash = computeTransportRefreshCacheKeyHash(target, leaguesCtx, inCombat);
+        lastRefreshKey = refreshCacheKeyHash;
         long keyTime = System.currentTimeMillis() - keyStart;
 
         TransportRefreshSnapshot snap = transportRefreshSnapshots.get(refreshCacheKeyHash);
@@ -636,6 +642,7 @@ public class PathfinderConfig {
                 // A catalog variant may introduce an item gate. Capture under the key that
                 // fingerprints the expanded set, so later item changes cannot reuse this pass.
                 refreshCacheKeyHash = computeTransportRefreshCacheKeyHash(target, leaguesCtx, inCombat);
+                lastRefreshKey = refreshCacheKeyHash;
             }
         }
 
@@ -846,6 +853,23 @@ public class PathfinderConfig {
 
     public boolean isBlockedTransportStep(int originPacked, int destinationPacked) {
         return isBlockedTransportStep(originPacked, destinationPacked, blockedTransportEdgesPacked);
+    }
+
+    public int getLastRefreshKey() {
+        return lastRefreshKey;
+    }
+
+    /** Transport-relevant inventory/equipment(/bank) fingerprint taken by the most recent refresh. */
+    public int getLastItemFingerprint() {
+        return lastComputedInvFingerprint;
+    }
+
+    /**
+     * The same fingerprint as of now. Reads only the cached item containers, so it is cheap enough to
+     * check every tick, and it catches item changes that no refresh has seen yet.
+     */
+    public int currentItemFingerprint() {
+        return fingerprintInventoryEquipmentBank();
     }
 
     public boolean isLearnedBlockedTransport(int originPacked, int destinationPacked) {
