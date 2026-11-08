@@ -121,6 +121,16 @@ public class MicrobotPluginSearchTest
     }
 
     @Test
+    public void extraSpacesBetweenWordsRankLikeOneSpace()
+    {
+        Item magic = new Item("AIO Magic", false);
+        Item tome = new Item("Tome of magic aio", false);
+
+        assertEquals(search("aio magic", tome, magic), search("aio   magic", tome, magic));
+        assertEquals("AIO Magic", search("aio   magic", tome, magic).get(0));
+    }
+
+    @Test
     public void bracketTextInKeywordsStaysSearchable()
     {
         Item tagged = new Item("Alpha", false, "[beta]");

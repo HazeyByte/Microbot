@@ -91,11 +91,11 @@ public class MicrobotPluginConfigurationDescriptor
 	@Nullable
 	String getInternalPluginHubName()
 	{
-		if (plugin == null)
+		// A blocked Hub plugin has a Hub name but no plugin: it still needs Uninstall and its own Wiki page.
+		if (microbotHubName != null)
 		{
-			return null;
+			return microbotHubName;
 		}
-
-		return microbotHubName != null ? microbotHubName : ExternalPluginManager.getInternalName(plugin.getClass());
+		return plugin == null ? null : ExternalPluginManager.getInternalName(plugin.getClass());
 	}
 }

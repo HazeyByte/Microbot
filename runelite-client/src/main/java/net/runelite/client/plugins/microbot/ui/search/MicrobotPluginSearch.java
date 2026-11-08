@@ -52,8 +52,10 @@ public class MicrobotPluginSearch
 
     public static <T extends SearchablePlugin> List<T> search(Collection<T> searchablePlugins, String query)
     {
-        String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
-        List<String> tokens = q.isEmpty() ? Collections.emptyList() : Arrays.asList(q.split("\\s+"));
+        String trimmed = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+        List<String> tokens = trimmed.isEmpty() ? Collections.emptyList() : Arrays.asList(trimmed.split("\\s+"));
+        // Ranked on the same single-spaced words it is matched on, so "aio  magic" ranks like "aio magic".
+        String q = String.join(" ", tokens);
 
         return searchablePlugins.stream()
                 .map(Row::new)

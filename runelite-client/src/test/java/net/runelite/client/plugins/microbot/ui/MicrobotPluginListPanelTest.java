@@ -1296,6 +1296,8 @@ public class MicrobotPluginListPanelTest
         assertFalse("No switch", ((Component) field(ghost, "onOffToggle")).isVisible());
         assertEquals("1 to fix", text("fixChip"));
         assertFalse("A blocked plugin is the user's, not a settings row", ghost.isNoSwitch());
+        assertEquals("Uninstall and the Wiki link need its Hub name", "BirdHunter", ghost.getPluginConfig().getInternalPluginHubName());
+        assertTrue(ghost.getKeywords().contains("pluginhub"));
         assertFalse(inList("builtInHeader"));
 
         clickStatus("<html>[M] Bird Hunter");
