@@ -288,7 +288,7 @@ public class LivePluginManagerTest {
         assertTrue(Files.exists(directory.resolve("FixturePlugin.jar")));
         String reason = hub.getBlockedPlugins().get("FixturePlugin");
         assertNotNull(reason);
-        assertTrue(reason, reason.startsWith("disabled upstream"));
+        assertTrue(reason, reason.startsWith("turned off on the Microbot Hub"));
         verify(plugins, never()).preparePlugin(any(), anyCollection());
     }
 
